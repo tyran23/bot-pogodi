@@ -1,0 +1,12 @@
+import telebot
+
+bot = telebot.TeleBot('6743215652:AAGp0dV3PuLvVUyl8rmpBt_FQADx5tQQF_0')
+
+
+@bot.message_handler(commands=["start"])
+def start(message):
+    file = open('photo.png', 'rb')
+    bot.send_photo(message.chat.id, file, 'Ясно')
+
+
+bot.polling()
