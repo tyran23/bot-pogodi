@@ -10,6 +10,7 @@ owmToken = os.getenv('a7cdf5a1d7d50b47ae1783c147695e8b')
 owm = pyowm.OWM(owmToken, language='ru')
 botToken = os.getenv('6743215652:AAGp0dV3PuLvVUyl8rmpBt_FQADx5tQQF_0')  
 bot = telebot.TeleBot(botToken)
+mgr = owm.weather_manager()
 
 
 # Когда боту пишут текстовое сообщение вызывается эта функция
@@ -32,17 +33,15 @@ def send_message(message):
         try:
             city, command = message.text.split()
             # Имя города пользователь вводит в чат, после этого мы его передаем в функцию
-            observation = owm.weather_at_place(city)
-            weather = observation.get_weather()
-            temp = weather.get_temperature("celsius")["temp"]  # Присваиваем переменной значение температуры из таблицы
+            observation = mgr.weather_at_place(city)
+            weather = observation.weather
+            temp = weather.temperature("celsius")  # Присваиваем переменной значение температуры из таблицы
             temp = round(temp)
-            hum = weather.get_humidity['humidity']
-            press = weather.get_pressure['pressure']
-            wind = weather.get_wind['speed']
-            rise_time = datetime.datetime.fromtimestamp(weather.get_sunrise['sunrise'])
-            set_time = datetime.datetime.fromtimestamp(weather.get_sunset['sunset'])
-            print(time.ctime(), "User id:", message.from_user.id)
-            print(time.ctime(), "Message:", message.text.title(), temp, "C", weather.get_detailed_status())
+            hum = weather.humidity()['humidity']
+            press = weather.press()['pressure']
+            wind = weather.wind()['speed']
+            rise_time = weather.sunrise_time(timeformat='iso')
+            set_time = weather.sunset_time(timeformat='iso')
             if command == '/all':
                 print(f"***{datetime.datetime.now().strftime('%Y-%m-%d %H:%M')}***\n"
                       f'Погода в городе {city}:\nТемпература:{temp}C°\n'
