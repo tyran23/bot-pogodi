@@ -1,81 +1,62 @@
+import requests
 import datetime
-
-import pyowm
-import telebot  
-import os  
-import time
+from pprint import pprint
+open_weather_token = "openweather_token"
+tg_bot_token = "your_bot_token"
 
 
-owmToken = os.getenv('a7cdf5a1d7d50b47ae1783c147695e8b')  
-owm = pyowm.OWM(owmToken, language='ru')
-botToken = os.getenv('6743215652:AAGp0dV3PuLvVUyl8rmpBt_FQADx5tQQF_0')  
-bot = telebot.TeleBot(botToken)
-mgr = owm.weather_manager()
+def get_weather(city, open_weather_token):
+
+    code_to_smile = {
+        "Clear": "Ясно \U00002600",
+        "Clouds": "Облачно \U00002601",
+        "Rain": "Дождь \U00002614",
+        "Drizzle": "Дождь \U00002614",
+        "Thunderstorm": "Гроза \U000026A1",
+        "Snow": "Снег \U0001F328",
+        "Mist": "Туман \U0001F32B"
+    }
+
+    try:
+        r = requests.get(
+            f"http://api.openweathermap.org/data/2.5/weather?q={city}&appid={open_weather_token}&units=metric"
+        )
+        data = r.json()
+        pprint(data)
+
+        city = data["name"]
+        cur_weather = data["main"]["temp"]
+
+        weather_description = data["weather"][0]["main"]
+        if weather_description in code_to_smile:
+            wd = code_to_smile[weather_description]
+        else:
+            wd = "Посмотри в окно, не пойму что там за погода!"
+
+        humidity = data["main"]["humidity"]
+        pressure = data["main"]["pressure"]
+        wind = data["wind"]["speed"]
+        sunrise_timestamp = datetime.datetime.fromtimestamp(data["sys"]["sunrise"])
+        sunset_timestamp = datetime.datetime.fromtimestamp(data["sys"]["sunset"])
+        length_of_the_day = datetime.datetime.fromtimestamp(data["sys"]["sunset"]) - datetime.datetime.fromtimestamp(
+            data["sys"]["sunrise"])
+
+        print(f"***{datetime.datetime.now().strftime('%Y-%m-%d %H:%M')}***\n"
+              f"Погода в городе: {city}\nТемпература: {cur_weather}C° {wd}\n"
+              f"Влажность: {humidity}%\nДавление: {pressure} мм.рт.ст\nВетер: {wind} м/с\n"
+              f"Восход солнца: {sunrise_timestamp}\nЗакат солнца: {sunset_timestamp}\nПродолжительность дня: {length_of_the_day}\n"
+              f"Хорошего дня!"
+              )
+
+    except Exception as ex:
+        print(ex)
+        print("Проверьте название города")
 
 
-# Когда боту пишут текстовое сообщение вызывается эта функция
-@bot.message_handler(content_types=['text'])
-def send_message(message):
-    """Send the message to user with the weather"""
-    # Отдельно реагируем на сообщения /start и /help
-
-    if message.text.lower() == "/start":
-        bot.send_message(message.from_user.id, "Здравствуйте. Чтобы узнать список команд введите /help. "
-                                               "Введите название города, а затем нужную команду для получения "
-                                               "информации о погоде")
-    elif message.text.lower() == '/help':
-        bot.send.message(message.from_user.id, 'Вот список команд: /all - вся информация о погоде, /temp - температура,'
-                                               '/hum - влажность, /press - давление, /wind - скорость ветра, '
-                                               '/rise - время восхода солнца, /set - время заката солнца')
-    else:
-        # С помощью try заставляю пройти код, если функция observation не находит город
-        # и выводит ошибку, то происходит переход к except
-        try:
-            city, command = message.text.split()
-            # Имя города пользователь вводит в чат, после этого мы его передаем в функцию
-            observation = mgr.weather_at_place(city)
-            weather = observation.weather
-            temp = weather.temperature("celsius")  # Присваиваем переменной значение температуры из таблицы
-            temp = round(temp)
-            hum = weather.humidity()['humidity']
-            press = weather.press()['pressure']
-            wind = weather.wind()['speed']
-            rise_time = weather.sunrise_time(timeformat='iso')
-            set_time = weather.sunset_time(timeformat='iso')
-            if command == '/all':
-                print(f"***{datetime.datetime.now().strftime('%Y-%m-%d %H:%M')}***\n"
-                      f'Погода в городе {city}:\nТемпература:{temp}C°\n'
-                      f'Влажность: {hum}%\n'
-                      f'Давление: {press} мм рт.ст\n'
-                      f'Ветер: {wind} м/c\n'
-                      f'Восход солнца: {rise_time}\n'
-                      f'Закат солнца: {set_time}\n'
-                      f'Удачного вам дня!')
-            elif command == '/temp':
-                print(f"***{datetime.datetime.now().strftime('%Y-%m-%d %H:%M')}***\n"
-                      f'Температура в городе {city}: {temp} C°')
-            elif command == '/hum':
-                print(f"***{datetime.datetime.now().strftime('%Y-%m-%d %H:%M')}***\n"
-                      f'Влажность в городе {city}: {hum}%')
-            elif command == '/press':
-                print(f"***{datetime.datetime.now().strftime('%Y-%m-%d %H:%M')}***\n"
-                      f'Давление в городе {city}: {press}мм рт.ст.')
-            elif command == '/wind':
-                print(f"***{datetime.datetime.now().strftime('%Y-%m-%d %H:%M')}***\n"
-                      f'Ветер в городе {city}: {wind}м/c')
-            elif command == '/rise':
-                print(f"***{datetime.datetime.now().strftime('%Y-%m-%d %H:%M')}***\n"
-                      f'Восход солнца в городе {city} в {rise_time}')
-            elif command == '/set':
-                print(f"***{datetime.datetime.now().strftime('%Y-%m-%d %H:%M')}***\n"
-                      f'Закат солнца в городе {city} в {set_time}')
-        except Exception:
-            answer = "Не найден город, попробуйте ввести название снова.\n"
-            print(time.ctime(), "User id:", message.from_user.id)
-            print(time.ctime(), "Message:", message.text.title(), 'Error')
-
-        bot.send_message(message.chat.id, answer)  # Ответить сообщением
+def main():
+    city = input("Введите город: ")
+    get_weather(city, open_weather_token)
 
 
-# Запускаем бота
-bot.polling(none_stop=True)
+if __name__ == '__main__':
+    main()
