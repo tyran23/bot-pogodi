@@ -6,7 +6,7 @@ from aiogram.dispatcher import Dispatcher
 from aiogram.utils import executor
 
 
-bot = Bot(token=tg_bot_token)
+bot = Bot(7160873837:AAFYPVXYbAOAvRikWe0_yDR_53KV_fjoIVk)
 dp = Dispatcher(bot)
 
 
