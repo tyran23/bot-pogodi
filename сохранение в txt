@@ -1,0 +1,10 @@
+@dp.message_handler(commands=['god'])
+async def god(message: types.Message):
+    arg=message.get_args()
+    with open('god.txt', 'a+') as file: #добавляем в файл в формате: {Имя} | {дата}
+        file.write(f'{message.from_user.first_name} | {arg}')
+    await message.answer('Готово!')
+
+@dp.message_handler(commands=['get']) 
+async def getbd(message: types.Message):
+    await bot.send_document(types.InputFile('god.txt'))
